@@ -1,0 +1,17 @@
+* Planning
+
+** Line-by-Line
+
+Move through the characters until you encounter a newline. If the
+search term wasn't detected in the line, move on. Otherwise:
+
+** Term-by-Term
+
+Move through the characters in the line and find all the points where
+the search term is included. Push these onto a queue. Return to the
+beginning of the line.
+
+** Character-by-Character
+
+Move through the characters in the line. When you reach each term
+position, change to red color for the duration of the term.
