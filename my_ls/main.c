@@ -5,6 +5,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
 #define FRMT_BOLD "\e[1m"
@@ -40,6 +41,20 @@ void print_ent(struct dirent * ent) {
 	printf("%s%s%s ",
 		   frmt, clr,
 		   ent->d_name);
+}
+
+void print_ent_long(struct dirent * ent) {
+	struct stat * ent_stat = malloc(sizeof(struct stat));
+	stat(ent->d_name, ent_stat);
+
+	// File size
+	printf(FRMT_RESET CLR_RESET "% 8ld ", ent_stat->st_size);
+	
+	// Date and Time
+	char date_buffer[24];
+	struct tm tm_time = *localtime(&ent_stat->st_mtime);
+	strftime(date_buffer, sizeof(date_buffer), "%d-%m-%Y %H:%M", &tm_time);
+	printf(FRMT_RESET CLR_RESET "%s ", date_buffer);
 }
 
 int main(int argc, char ** argv) {
@@ -87,11 +102,17 @@ int main(int argc, char ** argv) {
 			}
 		}
 		if (to_print) {
-			print_ent(cwd_ent);
+			if (flags & l_FLAG) {
+				print_ent_long(cwd_ent);
+				print_ent(cwd_ent);
+				printf("\n");
+			} else {
+				print_ent(cwd_ent);
+			}
 		}
 	}
 
-	printf("\n");
+	if ((flags & l_FLAG) == 0) printf("\n");
 	
 	return 0;
 }
