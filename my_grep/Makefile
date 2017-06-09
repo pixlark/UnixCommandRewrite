@@ -1,2 +1,2 @@
 make:
-	gcc -o my_grep main.c
+	gcc -g -o my_grep main.c

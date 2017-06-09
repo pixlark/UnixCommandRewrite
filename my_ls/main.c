@@ -48,7 +48,7 @@ void print_ent_long(struct dirent * ent) {
 	stat(ent->d_name, ent_stat);
 
 	// File size
-	printf(FRMT_RESET CLR_RESET "% 8ld ", ent_stat->st_size);
+	printf(FRMT_RESET CLR_RESET "% 10ld ", ent_stat->st_size);
 	
 	// Date and Time
 	char date_buffer[24];

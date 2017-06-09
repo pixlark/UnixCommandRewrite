@@ -37,7 +37,7 @@ u16 QDequeue(Queue * queue) {
 
 void QEnqueue(Queue * queue, u16 data) {
 	QNode * new_node = malloc(sizeof(QNode));
-	new_node->next = 0;`
+	new_node->next = 0;
 	new_node->data = data;
 	if (queue->rear == 0) {
 		queue->front = new_node;
@@ -55,69 +55,74 @@ int main (int argc, char ** argv) {
 	}
 	argv++;
 	char * search_term = *argv;
-	argv++;
-	char * file_name = *argv;
-	FILE * search_file = fopen(file_name, "r");
 
-	u16 term_size = strlen(search_term);
-
-	u16 current_line = 1;
-	for (;;) {
-		Queue * term_queue = malloc(sizeof(Queue));
-		term_queue->front = 0;
-		term_queue->rear = 0;
-		u16 line_begin_offset = 0;
-		u16 lterm_offset = 0;
-		u8 term_this_line = 0x00;
-		u8 end_of_file = 0x00;
+	for (int i = 0; i < argc-2;i++) {
+		argv++;
+		char * file_name = *argv;
+		FILE * search_file = fopen(file_name, "r");
+		printf(FRMT_BOLD CLR_GREEN "----%s----\n", file_name);
+		u16 term_size = strlen(search_term);
+		u16 current_line = 1;
 		for (;;) {
-			/* Move through until a newline is found, and push any
-			   columns where the search term is detected onto a
-			   queue. */
-			char lc = fgetc(search_file);
-			if (lc == EOF) {
-				end_of_file = 0xFF;
-				break;
-			} else if (lc == '\n') {
-				current_line++;
-				break;
-			} else if (lc == search_term[lterm_offset]) {
-				lterm_offset++;
-			} else {
-				lterm_offset = 0;
-			}
-			if (lterm_offset == term_size) {
-				term_this_line = 0xFF;
-				QEnqueue(term_queue, line_begin_offset - (term_size - 1));
-				lterm_offset = 0;
-			}
-			line_begin_offset++;
-		}
-		if (term_this_line) {
-			/* If a term was found on this line, print the line, with
-			   the characters red on every column where a term was
-			   detected. */
-			fseek(search_file, -(line_begin_offset + 1), SEEK_CUR);
-			u16 next_term_column = QDequeue(term_queue);
-			u16 print_offset = 0;
+			Queue * term_queue = malloc(sizeof(Queue));
+			term_queue->front = 0;
+			term_queue->rear = 0;
+			u16 line_begin_offset = 0;
+			u16 lterm_offset = 0;
+			u8 term_this_line = 0x00;
+			u8 end_of_file = 0x00;
 			for (;;) {
-				char cc = fgetc(search_file);
-				if (cc == '\n' || cc == EOF) break;
-				if (print_offset == next_term_column) {
-					char pc = cc;
-					for(int i = 0; i < term_size; i++) {
-						if (i > 0) pc = fgetc(search_file);
-						printf(FRMT_BOLD CLR_RED "%c", pc);
-					}
-					next_term_column = QDequeue(term_queue);
+				/* Move through until a newline is found, and push any
+				   columns where the search term is detected onto a
+				   queue. */
+				char lc = fgetc(search_file);
+				if (lc == EOF) {
+					end_of_file = 0xFF;
+					break;
+				} else if (lc == '\n') {
+					current_line++;
+					break;
+				} else if (lc == search_term[lterm_offset]) {
+					lterm_offset++;
 				} else {
-					printf(FRMT_RESET CLR_RESET "%c", cc);
+					lterm_offset = 0;
 				}
-				print_offset++;
+				if (lterm_offset == term_size) {
+					term_this_line = 0xFF;
+					QEnqueue(term_queue, line_begin_offset - (term_size - 1));
+					lterm_offset = 0;
+				}
+				line_begin_offset++;
 			}
-			printf("\n");
+			if (term_this_line) {
+				/* If a term was found on this line, print the line, with
+				   the characters red on every column where a term was
+				   detected. */
+				fseek(search_file, -(line_begin_offset + 1), SEEK_CUR);
+				u16 next_term_column = QDequeue(term_queue);
+				u16 print_offset = 0;
+				for (;;) {
+					char cc = fgetc(search_file);
+					if (cc == '\n' || cc == EOF) break;
+					if (print_offset == next_term_column) {
+						char pc = cc;
+						for(int i = 0; i < term_size; i++) {
+							if (i > 0) pc = fgetc(search_file);
+							printf(FRMT_BOLD CLR_RED "%c", pc);
+						}
+						next_term_column = QDequeue(term_queue);
+					} else {
+						printf(FRMT_RESET CLR_RESET "%c", cc);
+					}
+					print_offset++;
+				}
+				printf("\n");
+			}
+			if (end_of_file) {
+				free(term_queue);
+				break;
+			}
 		}
-		if (end_of_file) break;
 	}
 	return 0;
 }
