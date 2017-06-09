@@ -12,6 +12,7 @@
 #include <pixint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
@@ -21,6 +22,7 @@ struct termios enable_char_input() {
 	tcgetattr(STDIN_FILENO, &t_old);
 	struct termios t_new = t_old;
 	t_new.c_lflag &= ~(ICANON);
+	t_new.c_lflag &= ~(ECHO);
 	tcsetattr(STDIN_FILENO, TCSANOW, &t_new);
 	return t_old;
 }
@@ -39,31 +41,50 @@ char * read_line(FILE * file) {
 	char * buffer = malloc(sizeof(char) * 256);
 	u16 buf_index = 0;
 	for (;;) {
-		char c = fgetc(file);
+		int c = fgetc(file);
 		if (c == '\n') break;
+		if (c == EOF) {
+			buffer[0] = '\0';
+			return buffer;
+		}
 		buffer[buf_index] = c;
 		buf_index++;
 	}
-	buffer[buf_index] = '\0';
+	buffer[buf_index] = '\n';
+	buffer[buf_index+1] = '\0';
 	return buffer;
 }
 
-int main() {
+int main(int argc, char ** argv) {
+	if (argc < 2) {
+		fprintf(stderr, "Too few arguments.");
+		exit(1);
+	}
+	argv++;
 	struct winsize ws = get_window_size();
 	struct termios t_old = enable_char_input();
-	FILE * read_file = fopen("test_file", "r");
+	FILE * read_file = fopen(*argv, "r");
 	int tc;
 	while ((tc = fgetc(read_file)) != EOF) {
 		ungetc(tc, read_file);
 		for (int i = 0; i < ws.ws_row - 1; i++) {
-			printf("%s\n", read_line(read_file));
+			char * next_line = read_line(read_file);
+			printf("%s", next_line);
+			free(next_line);
 		}
-		/*for (;;) {
+		u8 instruction_given = 0;
+		for (;;) {
 			if (getchar() == ' ') break;
 			else {
-				printf("space to continue");
+				if (!instruction_given) {
+					printf("PRESS SPACE TO ADVANCE");
+					instruction_given = ~0;
+				}
 			}
-			}*/
+		}
+		if (instruction_given) {
+			printf("\033[2K\r"); // Erase current line
+		}
 	}
 	reset_termios(t_old);
 	return 0;
