@@ -9,6 +9,7 @@
  */
 
 #include <dirent.h>
+#include <errno.h>
 #include <pixint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,17 +21,31 @@ void search_directory(char * search_dir_path, char * search_term) {
 	DIR * search_dir = opendir(search_dir_path);
 	struct dirent * search_ent;
 	while ((search_ent = readdir(search_dir)) != 0) {
+		// Exclude . and .. directories
+		if (strcmp(search_ent->d_name, ".") == 0 || strcmp(search_ent->d_name, "..") == 0) {
+			continue;
+		}
+		// Get path in context
+		char * context_path = malloc((sizeof(char) * strlen(search_dir_path) + 2) +
+									 (sizeof(char) * strlen(search_ent->d_name) + 1));
+		strcpy(context_path, search_dir_path);
+		strcat(context_path, "/");
+		strcat(context_path, search_ent->d_name);
+		// Check for search term
 		if (strcmp(search_ent->d_name, search_term) == 0) {
-			printf("Found at: %s/%s\n", search_dir_path, search_ent->d_name);
+			printf("Found at: %s\n", context_path);
 		}
+		// Recurse through if directory
 		struct stat * ent_stat = malloc(sizeof(struct stat));
-		stat(search_ent->d_name, ent_stat);
-		if (S_ISDIR(dir_test_stat->st_mode)) {
-			strcat()
-			search_directory(strcat()
+		stat(context_path, ent_stat);
+		if (S_ISDIR(ent_stat->st_mode)) {
+			search_directory(context_path, search_term);
 		}
+		free(context_path);
 		free(ent_stat);
 	}
+	free(search_ent);
+	free(search_dir);
 }
 
 int main(int argc, char ** argv) {
