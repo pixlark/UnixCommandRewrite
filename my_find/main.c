@@ -16,6 +16,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 void search_directory(char * search_dir_path, char * search_term) {
 	DIR * search_dir = opendir(search_dir_path);
@@ -49,10 +50,20 @@ void search_directory(char * search_dir_path, char * search_term) {
 }
 
 int main(int argc, char ** argv) {
+	for (u8 i = 0; i < argc; i++) {
+		if (strcmp(argv[1], "-h") == 0) {
+			printf("\nmy_find by pixlark\n\n");
+			printf("Usage: my_find starting_directory search_term\n\n");
+			printf("-h: Display this help menu.\n\n");
+			exit(0);
+		}
+	}
+
 	if (argc < 3) {
 		fprintf(stderr, "Too few arguments.\n");
 		exit(0);
 	}
+	
 	argv++;
 	char * starting_directory = *argv;
 	argv++;
